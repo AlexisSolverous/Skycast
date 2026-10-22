@@ -1,5 +1,6 @@
 import provider_factory
 from models.weather import MockWeatherProvider, OpenWeatherAPIProvider
+from streamlit.errors import StreamlitSecretNotFoundError
 
 
 def configure_secrets(monkeypatch, api_key):
@@ -22,6 +23,20 @@ def test_empty_key_uses_demo_provider(monkeypatch):
 
 def test_missing_key_uses_demo_provider(monkeypatch):
     configure_secrets(monkeypatch, {})
+
+    provider, is_demo = provider_factory.get_provider()
+
+    assert isinstance(provider, MockWeatherProvider)
+    assert is_demo
+
+
+def test_unavailable_secrets_use_demo_provider(monkeypatch):
+    class MissingSecrets:
+        def get(self, _key, _default):
+            raise StreamlitSecretNotFoundError("Secrets are not configured.")
+
+    monkeypatch.setattr(provider_factory.st, "secrets", MissingSecrets())
+    monkeypatch.setattr(provider_factory.st, "warning", lambda *_args, **_kwargs: None)
 
     provider, is_demo = provider_factory.get_provider()
 

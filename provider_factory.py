@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import streamlit as st
+from streamlit.errors import StreamlitSecretNotFoundError
 
 from models.weather import MockWeatherProvider, OpenWeatherAPIProvider
 
@@ -9,8 +10,8 @@ SECRETS_PATH = Path(__file__).resolve().parent / ".streamlit" / "secrets.toml"
 
 def _read_api_key():
     try:
-        value = st.secrets.get("OPENWEATHER_API_KEY", "050a0ac51919564554054957247adb86")
-    except Exception:
+        value = st.secrets.get("OPENWEATHER_API_KEY", "")
+    except StreamlitSecretNotFoundError:
         value = ""
 
     api_key = str(value or "").strip()

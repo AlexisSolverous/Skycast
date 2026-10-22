@@ -3,8 +3,9 @@ import streamlit as st
 from database.db_handler import DatabaseHandler
 from database.seed_cities import seed_if_empty
 from models.user import User
+from ui import setup_page
 
-st.set_page_config(page_title="SkyCast", page_icon="⛅")
+setup_page("SkyCast", "⛅")
 
 # The database is created (and the 100 starter cities are seeded)
 # automatically the first time the app runs.
@@ -22,9 +23,12 @@ def open_dashboard(user):
 
 def login_form():
     st.subheader("Log In")
-    username = st.text_input("Username", key="login_username")
-    password = st.text_input("Password", type="password", key="login_password")
-    if st.button("Log In"):
+    # Forms submit together, so users can press Enter after entering a password.
+    with st.form("login_form"):
+        username = st.text_input("Username", key="login_username")
+        password = st.text_input("Password", type="password", key="login_password")
+        submitted = st.form_submit_button("Log In")
+    if submitted:
         row = db.get_user_by_username(username)
         if row is None:
             st.error("No account with that username.")
@@ -38,9 +42,13 @@ def login_form():
 
 def signup_form():
     st.subheader("Create an Account")
-    username = st.text_input("Choose a username", key="signup_username")
-    password = st.text_input("Choose a password", type="password", key="signup_password")
-    if st.button("Sign Up"):
+    with st.form("signup_form"):
+        username = st.text_input("Choose a username", key="signup_username")
+        password = st.text_input(
+            "Choose a password", type="password", key="signup_password"
+        )
+        submitted = st.form_submit_button("Sign Up")
+    if submitted:
         if not username or not password:
             st.warning("Please fill in both fields.")
             return
