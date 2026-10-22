@@ -3,6 +3,7 @@ from datetime import date
 import requests
 import streamlit as st
 
+from auth_session import initialize_auth
 from database.db_handler import DatabaseHandler
 from models.alerts import classify_weather
 from models.city import City
@@ -22,12 +23,12 @@ from ui import setup_page
 setup_page("SkyCast - Trips", "🧭")
 st.title("🧭 Trips")
 
-if not st.session_state.get("user"):
+db = DatabaseHandler()
+user = initialize_auth(db)
+if not user:
     st.warning("Please log in from the Home page first.")
     st.stop()
 
-db = DatabaseHandler()
-user = st.session_state.user
 provider, is_demo = get_provider()
 if is_demo:
     st.info("Demo mode: sample weather is shown. Add an API key for live data.")

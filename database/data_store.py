@@ -13,6 +13,18 @@ class DataStore(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def create_auth_session(self, token_hash, user_id, expires_at):
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_user_for_auth_session(self, token_hash, now):
+        raise NotImplementedError
+
+    @abstractmethod
+    def delete_auth_session(self, token_hash):
+        raise NotImplementedError
+
+    @abstractmethod
     def count_cities(self):
         raise NotImplementedError
 
