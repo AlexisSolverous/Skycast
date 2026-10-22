@@ -20,6 +20,15 @@ def test_empty_key_uses_demo_provider(monkeypatch):
     assert is_demo
 
 
+def test_missing_key_uses_demo_provider(monkeypatch):
+    configure_secrets(monkeypatch, {})
+
+    provider, is_demo = provider_factory.get_provider()
+
+    assert isinstance(provider, MockWeatherProvider)
+    assert is_demo
+
+
 def test_placeholder_key_uses_demo_provider(monkeypatch):
     configure_secrets(monkeypatch, "  'paste_your_api_key_here'\n")
 

@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from datetime import date, datetime, timedelta, timezone
+
 import requests
 
 
@@ -37,12 +39,29 @@ class WeatherNetworkError(Exception):
 class WeatherCondition:
     """A simple data holder for one weather reading."""
 
-    def __init__(self, temperature, description, humidity, wind_speed, main_category):
+    def __init__(
+        self,
+        temperature,
+        description,
+        humidity,
+        wind_speed,
+        main_category,
+        sunrise=None,
+        sunset=None,
+        feels_like=None,
+        pressure=None,
+        forecast_date=None,
+    ):
         self.temperature = temperature
         self.description = description
         self.humidity = humidity
         self.wind_speed = wind_speed
         self.main_category = main_category  # e.g. "Rain", "Clear", "Thunderstorm"
+        self.sunrise = sunrise
+        self.sunset = sunset
+        self.feels_like = feels_like
+        self.pressure = pressure
+        self.forecast_date = forecast_date
 
 
 class WeatherProvider(ABC):
@@ -126,12 +145,27 @@ class OpenWeatherAPIProvider(WeatherProvider):
                 "units": "metric",
             },
         )
+        timezone_offset = data.get("timezone", 0)
+        system = data.get("sys", {})
+
+        def local_time(timestamp):
+            if timestamp is None:
+                return None
+            local_timestamp = timestamp + timezone_offset
+            return datetime.fromtimestamp(
+                local_timestamp, tz=timezone.utc
+            ).strftime("%H:%M")
+
         return WeatherCondition(
             temperature=data["main"]["temp"],
             description=data["weather"][0]["description"],
             humidity=data["main"]["humidity"],
             wind_speed=data["wind"]["speed"],
             main_category=data["weather"][0]["main"],
+            sunrise=local_time(system.get("sunrise")),
+            sunset=local_time(system.get("sunset")),
+            feels_like=data["main"].get("feels_like"),
+            pressure=data["main"].get("pressure"),
         )
 
     def get_forecast(self, latitude, longitude):
@@ -145,7 +179,15 @@ class OpenWeatherAPIProvider(WeatherProvider):
             },
         )
         readings = []
-        for entry in data["list"][:8]:  # next ~24 hours, in 3-hour steps
+        timezone_offset = data.get("city", {}).get("timezone", 0)
+        for entry in data["list"]:
+            entry_date = entry.get("dt_txt")
+            if entry_date:
+                forecast_date = datetime.fromisoformat(entry_date).date().isoformat()
+            else:
+                forecast_date = datetime.fromtimestamp(
+                    entry["dt"] + timezone_offset, tz=timezone.utc
+                ).date().isoformat()
             readings.append(
                 WeatherCondition(
                     temperature=entry["main"]["temp"],
@@ -153,6 +195,9 @@ class OpenWeatherAPIProvider(WeatherProvider):
                     humidity=entry["main"]["humidity"],
                     wind_speed=entry["wind"]["speed"],
                     main_category=entry["weather"][0]["main"],
+                    feels_like=entry["main"].get("feels_like"),
+                    pressure=entry["main"].get("pressure"),
+                    forecast_date=forecast_date,
                 )
             )
         return readings
@@ -165,11 +210,11 @@ class MockWeatherProvider(WeatherProvider):
     """
 
     _SAMPLES = [
-        (30.5, "scattered clouds", 70, 3.2, "Clouds"),
-        (27.0, "light rain", 85, 4.5, "Rain"),
-        (35.0, "clear sky", 55, 2.0, "Clear"),
-        (24.0, "thunderstorm", 90, 8.0, "Thunderstorm"),
-        (8.0, "clear sky", 45, 1.5, "Clear"),
+        (30.5, "scattered clouds", 70, 3.2, "Clouds", "06:12", "18:24", 32.0, 1008),
+        (27.0, "light rain", 85, 4.5, "Rain", "05:48", "18:02", 29.0, 1009),
+        (35.0, "clear sky", 55, 2.0, "Clear", "06:25", "18:40", 37.0, 1006),
+        (24.0, "thunderstorm", 90, 8.0, "Thunderstorm", "06:03", "18:12", 26.0, 1007),
+        (8.0, "clear sky", 45, 1.5, "Clear", "07:10", "17:38", 7.0, 1018),
     ]
 
     def _pick(self, latitude, longitude):
@@ -183,4 +228,24 @@ class MockWeatherProvider(WeatherProvider):
         return self._pick(latitude, longitude)
 
     def get_forecast(self, latitude, longitude):
-        return [self._pick(latitude, longitude)]
+        today = date.today()
+        base = self._pick(latitude, longitude)
+        readings = []
+        # Three readings per day give the dashboard realistic daily highs and lows.
+        for day_offset in range(5):
+            forecast_date = (today + timedelta(days=day_offset)).isoformat()
+            daily_shift = ((day_offset % 3) - 1) * 1.5
+            for temperature_shift in (-3.0, 2.0, 0.0):
+                readings.append(
+                    WeatherCondition(
+                        temperature=base.temperature + daily_shift + temperature_shift,
+                        description=base.description,
+                        humidity=base.humidity,
+                        wind_speed=base.wind_speed,
+                        main_category=base.main_category,
+                        feels_like=base.feels_like,
+                        pressure=base.pressure,
+                        forecast_date=forecast_date,
+                    )
+                )
+        return readings
