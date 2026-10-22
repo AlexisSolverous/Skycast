@@ -202,7 +202,12 @@ if trips:
                     db.delete_destination(destination.id)
                     st.rerun()
 
-with st.expander("Add a new trip or destination"):
+# A new expander key after saving resets the form to its collapsed default.
+add_form_version = st.session_state.setdefault("trip_add_form_version", 0)
+with st.expander(
+    "Add a new trip or destination",
+    key=f"trip_add_expander_{add_form_version}",
+):
     st.subheader("Add a new trip")
     with st.form("create_trip_form"):
         trip_name = st.text_input(
@@ -217,6 +222,7 @@ with st.expander("Add a new trip or destination"):
             st.session_state["trips_flash_message"] = (
                 f"Trip '{trip_name.strip()}' created."
             )
+            st.session_state["trip_add_form_version"] += 1
             st.rerun()
 
     st.subheader("Add a destination")
@@ -272,6 +278,7 @@ with st.expander("Add a new trip or destination"):
                         st.session_state["trips_flash_message"] = (
                             f"Added {selected_result['name']} to your city list."
                         )
+                        st.session_state["trip_add_form_version"] += 1
                         st.rerun()
 
             trip_labels = {
@@ -301,4 +308,5 @@ with st.expander("Add a new trip or destination"):
                 st.session_state["trips_flash_message"] = (
                     f"Added {selected_city['name']} to the trip."
                 )
+                st.session_state["trip_add_form_version"] += 1
                 st.rerun()

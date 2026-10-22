@@ -1,4 +1,5 @@
 import math
+from urllib.parse import quote
 
 import pydeck as pdk
 import streamlit as st
@@ -15,6 +16,42 @@ _COLORS = [
     [219, 39, 119, 220],
     [8, 145, 178, 220],
 ]
+_START_COLOR = [22, 163, 74, 240]
+_FINISH_COLOR = [15, 23, 42, 240]
+
+
+def _svg_data_url(svg):
+    return f"data:image/svg+xml;charset=utf-8,{quote(svg, safe='')}"
+
+
+_ICON_MAPPING = {
+    "start": {
+        "url": _svg_data_url(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">'
+            '<path d="M10 4v40" stroke="#166534" stroke-width="4"/>'
+            '<path d="M12 6h27l-6 8 6 8H12z" fill="#16a34a" '
+            'stroke="#fff" stroke-width="2" stroke-linejoin="round"/>'
+            "</svg>"
+        ),
+        "width": 48,
+        "height": 48,
+        "anchorY": 44,
+    },
+    "finish": {
+        "url": _svg_data_url(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">'
+            '<path d="M10 4v40" stroke="#111827" stroke-width="4"/>'
+            '<path d="M12 6h28v22H12z" fill="#fff" stroke="#111827" '
+            'stroke-width="2"/>'
+            '<path d="M12 6h9v7h-9zm18 0h10v7H30zM21 13h9v7h-9z'
+            'm9 7h10v8H30z" fill="#111827"/>'
+            "</svg>"
+        ),
+        "width": 48,
+        "height": 48,
+        "anchorY": 44,
+    },
+}
 
 
 def _destination_value(destination, key):
@@ -48,6 +85,17 @@ def _prepare_destinations(destinations):
         )
 
     return sorted(rows, key=lambda row: row["travel_date"])
+
+
+def select_route_endpoints(destinations):
+    """Return the original first and last stops by travel date."""
+    ordered = sorted(
+        destinations,
+        key=lambda destination: str(_destination_value(destination, "travel_date")),
+    )
+    if not ordered:
+        return None, None
+    return ordered[0], ordered[-1]
 
 
 def calculate_map_view(coordinates):
@@ -89,7 +137,51 @@ def calculate_map_view(coordinates):
     return center_lat, center_lon, zoom
 
 
-def render_trip_map(destinations, follow_roads=False):
+def build_view_state(
+    destinations,
+    focus_mode="whole_route",
+    focus_point=None,
+    bearing=15,
+):
+    """Create a map view for the whole route or a selected stop."""
+    rows = _prepare_destinations(destinations)
+    if focus_mode == "stop":
+        if focus_point is None:
+            raise ValueError("focus point is required for stop view")
+        latitude, longitude = map(float, focus_point)
+        zoom = 12.5
+    elif focus_mode in ("start", "finish"):
+        if not rows:
+            raise ValueError("cannot focus an empty route")
+        stop = rows[0] if focus_mode == "start" else rows[-1]
+        latitude = stop["latitude"]
+        longitude = stop["longitude"]
+        zoom = 12.5
+    elif focus_mode == "whole_route":
+        if not rows:
+            raise ValueError("cannot fit an empty route")
+        latitude, longitude, zoom = calculate_map_view(
+            [(row["latitude"], row["longitude"]) for row in rows]
+        )
+    else:
+        raise ValueError(f"unsupported map focus mode: {focus_mode}")
+
+    return pdk.ViewState(
+        latitude=latitude,
+        longitude=longitude,
+        zoom=zoom,
+        pitch=50,
+        bearing=bearing,
+    )
+
+
+def render_trip_map(
+    destinations,
+    follow_roads=False,
+    focus_mode="whole_route",
+    focus_point=None,
+    bearing=15,
+):
     """Render the ordered itinerary as a token-free 3D map."""
     rows = _prepare_destinations(destinations)
     if not rows:
@@ -100,12 +192,14 @@ def render_trip_map(destinations, follow_roads=False):
     for index, row in enumerate(rows):
         row["elevation"] = 1200 + index * 700
         row["label_elevation"] = row["elevation"] + 350
-        row["color"] = _COLORS[index % len(_COLORS)]
+        if index == 0:
+            row["color"] = _START_COLOR
+        elif index == len(rows) - 1:
+            row["color"] = _FINISH_COLOR
+        else:
+            row["color"] = _COLORS[index % len(_COLORS)]
         stops.append([row["longitude"], row["latitude"]])
 
-    latitude, longitude, zoom = calculate_map_view(
-        [(row["latitude"], row["longitude"]) for row in rows]
-    )
     layers = [
         pdk.Layer(
             "ColumnLayer",
@@ -119,19 +213,6 @@ def render_trip_map(destinations, follow_roads=False):
             pickable=True,
             coverage=0.8,
             auto_highlight=True,
-        ),
-        pdk.Layer(
-            "TextLayer",
-            data=rows,
-            get_position="[longitude, latitude, label_elevation]",
-            get_text="city_name",
-            get_size=16,
-            size_units="pixels",
-            get_color=[25, 35, 50, 255],
-            get_text_anchor="middle",
-            get_alignment_baseline="bottom",
-            billboard=True,
-            pickable=False,
         ),
     ]
 
@@ -165,26 +246,105 @@ def render_trip_map(destinations, follow_roads=False):
                 pickable=False,
             )
         )
-    else:
+
+    if len(rows) > 2:
         layers.append(
             pdk.Layer(
                 "ScatterplotLayer",
-                data=rows,
+                id="route-stop-markers",
+                data=rows[1:-1],
                 get_position="[longitude, latitude]",
-                get_radius=9000,
+                get_radius=7000,
                 get_fill_color="color",
                 pickable=True,
             )
         )
 
+    endpoint_rows = [
+        {
+            **rows[0],
+            "icon_id": "start",
+            "size": 52,
+            "route_label": "START",
+            "label_color": _START_COLOR,
+        }
+    ]
+    if len(rows) > 1:
+        endpoint_rows.append(
+            {
+                **rows[-1],
+                "icon_id": "finish",
+                "size": 52,
+                "route_label": "FINISH",
+                "label_color": [255, 255, 255, 255],
+            }
+        )
+
+    # Keep colored markers and labels underneath the SVG icons as a visible fallback.
+    layers.extend(
+        [
+            pdk.Layer(
+                "ScatterplotLayer",
+                id="route-endpoint-fallback",
+                data=endpoint_rows,
+                get_position="[longitude, latitude]",
+                get_radius=11000,
+                get_fill_color="color",
+                stroked=True,
+                get_line_color=[255, 255, 255, 255],
+                line_width_min_pixels=2,
+                pickable=True,
+            ),
+            pdk.Layer(
+                "TextLayer",
+                id="route-endpoint-labels",
+                data=endpoint_rows,
+                get_position="[longitude, latitude, label_elevation]",
+                get_text="route_label",
+                get_size=16,
+                size_units="pixels",
+                get_color="label_color",
+                get_text_anchor="middle",
+                get_alignment_baseline="bottom",
+                billboard=True,
+                pickable=False,
+            ),
+            pdk.Layer(
+                "IconLayer",
+                id="route-endpoint-icons",
+                data=endpoint_rows,
+                get_icon="icon_id",
+                icon_mapping=_ICON_MAPPING,
+                get_position="[longitude, latitude]",
+                get_size="size",
+                size_units="pixels",
+                pickable=True,
+                billboard=True,
+            ),
+            pdk.Layer(
+                "TextLayer",
+                id="route-city-labels",
+                data=rows,
+                get_position="[longitude, latitude, label_elevation]",
+                get_text="city_name",
+                get_size=16,
+                size_units="pixels",
+                get_color=[25, 35, 50, 255],
+                get_text_anchor="middle",
+                get_alignment_baseline="bottom",
+                billboard=True,
+                pickable=False,
+            ),
+        ]
+    )
+
     deck = pdk.Deck(
         layers=layers,
-        initial_view_state=pdk.ViewState(
-            latitude=latitude,
-            longitude=longitude,
-            zoom=zoom,
-            pitch=50,
-            bearing=15,
+        initial_view_state=build_view_state(
+            rows,
+            focus_mode=focus_mode,
+            focus_point=focus_point,
+            bearing=bearing,
         ),
         map_style=CARTO_VOYAGER_STYLE,
         tooltip={
