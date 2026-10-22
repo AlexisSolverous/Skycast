@@ -2,6 +2,7 @@ from datetime import date
 
 import streamlit as st
 
+from auth_session import initialize_auth
 from database.db_handler import DatabaseHandler
 from models.alerts import classify_weather
 from models.weather import (
@@ -16,12 +17,12 @@ from ui import card, group_forecast_by_day, greeting, setup_page, weather_icon
 
 setup_page("SkyCast - Dashboard", "🌦️")
 
-if not st.session_state.get("user"):
+db = DatabaseHandler()
+user = initialize_auth(db)
+if not user:
     st.warning("Please log in from the Home page first.")
     st.stop()
 
-db = DatabaseHandler()
-user = st.session_state.user
 provider, is_demo = get_provider()
 
 today = date.today()

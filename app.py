@@ -1,5 +1,6 @@
 import streamlit as st
 
+from auth_session import create_remembered_login, initialize_auth, logout
 from database.db_handler import DatabaseHandler
 from database.seed_cities import seed_if_empty
 from models.user import User
@@ -11,14 +12,22 @@ setup_page("SkyCast", "⛅")
 # automatically the first time the app runs.
 db = DatabaseHandler()
 seed_if_empty(db)
+initialize_auth(db)
 
-if "user" not in st.session_state:
-    st.session_state.user = None
+if st.session_state.get("_redirect_after_login_token") == st.session_state.get(
+    "remembered_login_token"
+) and st.session_state.get("_redirect_after_login_token"):
+    st.session_state.pop("_redirect_after_login_token")
+    st.switch_page("pages/1_Dashboard.py")
 
 
 def open_dashboard(user):
+    create_remembered_login(db, user)
     st.session_state.user = user
-    st.switch_page("pages/1_Dashboard.py")
+    st.session_state["_redirect_after_login_token"] = st.session_state[
+        "_active_login_token"
+    ]
+    st.rerun()
 
 
 def login_form():
@@ -72,7 +81,7 @@ if st.session_state.user:
     )
     st.metric("Cities available", db.count_cities())
     if st.button("Log Out"):
-        st.session_state.user = None
+        logout(db)
         st.rerun()
 else:
     tab1, tab2 = st.tabs(["Log In", "Sign Up"])

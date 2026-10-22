@@ -12,12 +12,14 @@ class SpreadsheetStore(DataStore):
 
     _HEADERS = {
         "users": ("id", "username", "password_hash"),
+        "auth_sessions": ("token_hash", "user_id", "expires_at"),
         "cities": ("id", "name", "country", "latitude", "longitude"),
         "trips": ("id", "user_id", "trip_name", "created_at"),
         "destinations": ("id", "trip_id", "city_id", "travel_date", "notes"),
     }
     _INTEGER_FIELDS = {
         "users": {"id"},
+        "auth_sessions": {"user_id"},
         "cities": {"id"},
         "trips": {"id", "user_id"},
         "destinations": {"id", "trip_id", "city_id"},
@@ -112,6 +114,44 @@ class SpreadsheetStore(DataStore):
                 if row["username"] == username
             ),
             None,
+        )
+
+    def create_auth_session(self, token_hash, user_id, expires_at):
+        sessions = self._read_rows("auth_sessions")
+        sessions.append(
+            {
+                "token_hash": token_hash,
+                "user_id": user_id,
+                "expires_at": expires_at,
+            }
+        )
+        self._write_rows("auth_sessions", sessions)
+
+    def get_user_for_auth_session(self, token_hash, now):
+        session = next(
+            (
+                item
+                for item in self._read_rows("auth_sessions")
+                if item["token_hash"] == token_hash and item["expires_at"] > now
+            ),
+            None,
+        )
+        if session is None:
+            return None
+        return next(
+            (
+                user
+                for user in self._read_rows("users")
+                if user["id"] == session["user_id"]
+            ),
+            None,
+        )
+
+    def delete_auth_session(self, token_hash):
+        sessions = self._read_rows("auth_sessions")
+        self._write_rows(
+            "auth_sessions",
+            [session for session in sessions if session["token_hash"] != token_hash],
         )
 
     # ---------------- cities ----------------

@@ -7,6 +7,8 @@ check current conditions and a five-day forecast.
 ## Features
 
 - Create an account and log in with a username and password.
+- Stay signed in on this browser for up to 30 days; logging out revokes the
+  remembered session.
 - View current conditions, weather highlights, and a grouped five-day forecast
   in a dark, wide dashboard.
 - Use demo weather with no API key, or configure an existing OpenWeatherMap key
@@ -44,6 +46,12 @@ OPENWEATHER_API_KEY = "your-existing-openweathermap-key"
 
 No paid service, account, or additional API key is needed. The application
 stores user accounts, trips, and destinations in `database/skycast.db`.
+The database is a local SQLite file. Hosted environments with ephemeral
+filesystems can lose accounts, trips, and remembered sessions when the app
+restarts; use persistent database storage for reliable hosted data retention.
+The remember-me cookie contains a random token that is readable by browser
+JavaScript; it is not an HttpOnly cookie, so use this custom login only for
+trusted, low-risk deployments.
 
 ## Run tests
 

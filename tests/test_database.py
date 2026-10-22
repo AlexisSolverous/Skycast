@@ -37,6 +37,39 @@ def test_create_and_fetch_user():
     assert row["username"] == "testuser"
 
 
+def test_auth_session_restores_user_until_expiration():
+    db = DatabaseHandler(TEST_DB)
+    db.create_user("remembered", "hashedpw")
+    user = db.get_user_by_username("remembered")
+    token_hash = "hashed-session-token"
+
+    db.create_auth_session(token_hash, user["id"], "2026-01-02T00:00:00+00:00")
+
+    active = db.get_user_for_auth_session(
+        token_hash, "2026-01-01T00:00:00+00:00"
+    )
+    expired = db.get_user_for_auth_session(
+        token_hash, "2026-01-03T00:00:00+00:00"
+    )
+
+    assert active["username"] == "remembered"
+    assert expired is None
+
+
+def test_auth_session_can_be_revoked():
+    db = DatabaseHandler(TEST_DB)
+    db.create_user("logout-user", "hashedpw")
+    user = db.get_user_by_username("logout-user")
+    token_hash = "revoked-session-token"
+    db.create_auth_session(token_hash, user["id"], "2099-01-01T00:00:00+00:00")
+
+    db.delete_auth_session(token_hash)
+
+    assert db.get_user_for_auth_session(
+        token_hash, "2026-01-01T00:00:00+00:00"
+    ) is None
+
+
 def test_create_trip_and_add_destination():
     db = DatabaseHandler(TEST_DB)
     seed_if_empty(db)

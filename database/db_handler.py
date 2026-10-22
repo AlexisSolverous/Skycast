@@ -36,6 +36,13 @@ class DatabaseHandler(DataStore):
                     password_hash TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS auth_sessions (
+                    token_hash TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                );
+
                 CREATE TABLE IF NOT EXISTS cities (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
@@ -86,6 +93,45 @@ class DatabaseHandler(DataStore):
             return conn.execute(
                 "SELECT * FROM users WHERE username = ?", (username,)
             ).fetchone()
+        finally:
+            conn.close()
+
+    def create_auth_session(self, token_hash, user_id, expires_at):
+        conn = self._connect()
+        try:
+            conn.execute(
+                "INSERT INTO auth_sessions (token_hash, user_id, expires_at) "
+                "VALUES (?, ?, ?)",
+                (token_hash, user_id, expires_at),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_user_for_auth_session(self, token_hash, now):
+        conn = self._connect()
+        try:
+            return conn.execute(
+                """
+                SELECT users.*
+                FROM auth_sessions
+                JOIN users ON users.id = auth_sessions.user_id
+                WHERE auth_sessions.token_hash = ?
+                  AND auth_sessions.expires_at > ?
+                """,
+                (token_hash, now),
+            ).fetchone()
+        finally:
+            conn.close()
+
+    def delete_auth_session(self, token_hash):
+        conn = self._connect()
+        try:
+            conn.execute(
+                "DELETE FROM auth_sessions WHERE token_hash = ?",
+                (token_hash,),
+            )
+            conn.commit()
         finally:
             conn.close()
 
