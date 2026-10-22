@@ -4,6 +4,19 @@ SkyCast is a Python and Streamlit trip planner with a dark weather dashboard.
 Plan trips with multiple dated destinations, view their route on a map, and
 check current conditions and a five-day forecast.
 
+## Features
+
+- Create an account and log in with a username and password.
+- View current conditions, weather highlights, and a grouped five-day forecast
+  in a dark, wide dashboard.
+- Use demo weather with no API key, or configure an existing OpenWeatherMap key
+  for live weather data.
+- Plan trips with multiple dated destinations and notes.
+- View trip routes on a map, identify start and finish stops, and zoom to a stop
+  or the full route.
+- Review trip summaries and destination weather advisories.
+- Store accounts, trips, and destinations in a local SQLite database.
+
 ## Run SkyCast
 
 1. Install Python 3 and the project dependencies:
