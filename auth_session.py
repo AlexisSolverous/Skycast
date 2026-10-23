@@ -25,10 +25,10 @@ export default function (component) {
     const expires = new Date(data.expiresAt).toUTCString()
     document.cookie =
       `${cookieName}=${encodeURIComponent(token)}; Expires=${expires}; ` +
-      `Path=/; SameSite=Strict${secure}`
+      `Path=/; SameSite=Lax${secure}`
   } else if (data.action === "clear") {
     document.cookie =
-      `${cookieName}=; Max-Age=0; Path=/; SameSite=Strict${secure}`
+      `${cookieName}=; Max-Age=0; Path=/; SameSite=Lax${secure}`
   } else {
     const prefix = `${cookieName}=`
     const cookie = document.cookie
@@ -90,6 +90,7 @@ def initialize_auth(db):
     """Restore a login from the browser cookie after a Streamlit reconnect."""
     st.session_state.setdefault("user", None)
     action = st.session_state.pop("_login_cookie_action", None) or {}
+    request_token = st.context.cookies.get(_COOKIE_NAME, "")
     result = _COOKIE_BRIDGE(
         key=_COOKIE_COMPONENT_KEY,
         data={
@@ -101,7 +102,9 @@ def initialize_auth(db):
         default={"token": ""},
         on_token_change=lambda: None,
     )
-    token = result.token or ""
+    token = "" if action.get("action") == "clear" else (
+        request_token or result.token or ""
+    )
     st.session_state["remembered_login_token"] = token
 
     if (
