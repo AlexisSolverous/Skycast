@@ -21,7 +21,7 @@ check current conditions and a five-day forecast.
 
 ## Run SkyCast
 
-### Run in the browser (development)
+### Run in the browser 
 
 1. Install Python 3 and the project dependencies:
 
@@ -38,7 +38,7 @@ check current conditions and a five-day forecast.
 3. Create an account from the home page, then use the sidebar to open the
    Dashboard or Trips page.
 
-### Run as a desktop app (development)
+### Run as a desktop app 
 
 ```powershell
 py desktop.py
