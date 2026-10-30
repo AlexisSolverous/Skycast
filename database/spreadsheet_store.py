@@ -5,6 +5,7 @@ from pathlib import Path
 
 from database.data_store import DataStore
 from database.seed_cities import CITIES
+from paths import is_frozen, user_data_dir
 
 
 class SpreadsheetStore(DataStore):
@@ -27,11 +28,13 @@ class SpreadsheetStore(DataStore):
     _FLOAT_FIELDS = {"latitude", "longitude"}
 
     def __init__(self, data_dir=None):
-        self.data_dir = (
-            Path(data_dir)
-            if data_dir is not None
-            else Path(__file__).resolve().parent.parent / "data"
-        )
+        if data_dir is not None:
+            self.data_dir = Path(data_dir)
+        elif is_frozen():
+            # Keep packaged-app CSV data writable when installed in Program Files.
+            self.data_dir = user_data_dir() / "data"
+        else:
+            self.data_dir = Path(__file__).resolve().parent.parent / "data"
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         for table, headers in self._HEADERS.items():

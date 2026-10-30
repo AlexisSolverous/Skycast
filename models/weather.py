@@ -10,8 +10,8 @@ class InvalidApiKeyError(Exception):
     def __init__(self, status_code=401):
         super().__init__(
             "OpenWeatherMap rejected the API key. If the key is new, it can "
-            "take up to 2 hours to activate. Otherwise check it for typos in "
-            ".streamlit/secrets.toml."
+            "take up to 2 hours to activate. Otherwise check the configured "
+            "environment variable, AppData config, or .streamlit/secrets.toml."
         )
         self.status_code = status_code
 

@@ -2,6 +2,7 @@ import sqlite3
 from pathlib import Path
 
 from database.data_store import DataStore
+from paths import is_frozen, user_data_dir
 
 DEFAULT_DB_PATH = Path(__file__).parent / "skycast.db"
 
@@ -15,8 +16,11 @@ class DatabaseHandler(DataStore):
     something else, only this one file would need to change.
     """
 
-    def __init__(self, db_path=DEFAULT_DB_PATH):
-        self.db_path = db_path
+    def __init__(self, db_path=None):
+        if db_path is None and is_frozen():
+            # Keep packaged-app accounts and trips out of the install folder.
+            db_path = user_data_dir() / "skycast.db"
+        self.db_path = db_path if db_path is not None else DEFAULT_DB_PATH
         self._init_schema()
 
     def _connect(self):

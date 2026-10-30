@@ -34,8 +34,8 @@ def make_response(status_code, payload=None):
             401,
             InvalidApiKeyError,
             "OpenWeatherMap rejected the API key. If the key is new, it can "
-            "take up to 2 hours to activate. Otherwise check it for typos in "
-            ".streamlit/secrets.toml.",
+            "take up to 2 hours to activate. Otherwise check the configured "
+            "environment variable, AppData config, or .streamlit/secrets.toml.",
         ),
         (429, RateLimitError, "Too many requests, wait a minute"),
     ],

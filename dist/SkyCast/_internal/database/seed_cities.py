@@ -1,0 +1,123 @@
+# 100 starter cities with real-world GPS coordinates (latitude, longitude).
+# This is SkyCast's pre-loaded dataset: instead of asking the geocoding
+# API for the same well-known cities over and over, the coordinates are
+# stored once in the database and reused every time a user picks one
+# from the dropdown. New cities can still be looked up live through
+# OpenWeatherAPIProvider.get_coordinates().
+
+CITIES = [
+    # Philippines
+    ("Manila", "Philippines", 14.5995, 120.9842),
+    ("Quezon City", "Philippines", 14.6760, 121.0437),
+    ("Cebu City", "Philippines", 10.3157, 123.8854),
+    ("Davao City", "Philippines", 7.1907, 125.4553),
+    ("Baguio", "Philippines", 16.4023, 120.5960),
+    ("Iloilo City", "Philippines", 10.7202, 122.5621),
+    ("Cagayan de Oro", "Philippines", 8.4542, 124.6319),
+    ("Zamboanga City", "Philippines", 6.9214, 122.0790),
+    ("Bacolod", "Philippines", 10.6765, 122.9509),
+    ("Tagaytay", "Philippines", 14.1153, 120.9621),
+    ("Puerto Princesa", "Philippines", 9.7392, 118.7353),
+    ("General Santos", "Philippines", 6.1164, 125.1716),
+    ("Angeles City", "Philippines", 15.1450, 120.5887),
+    ("Batangas City", "Philippines", 13.7565, 121.0583),
+    ("Naga", "Philippines", 13.6218, 123.1948),
+    ("Legazpi", "Philippines", 13.1391, 123.7438),
+    ("Tacloban", "Philippines", 11.2543, 125.0000),
+    ("Dumaguete", "Philippines", 9.3103, 123.3080),
+    ("Butuan", "Philippines", 8.9475, 125.5406),
+    ("Olongapo", "Philippines", 14.8294, 120.2824),
+    # Asia (other)
+    ("Tokyo", "Japan", 35.6762, 139.6503),
+    ("Osaka", "Japan", 34.6937, 135.5023),
+    ("Seoul", "South Korea", 37.5665, 126.9780),
+    ("Beijing", "China", 39.9042, 116.4074),
+    ("Shanghai", "China", 31.2304, 121.4737),
+    ("Hong Kong", "Hong Kong", 22.3193, 114.1694),
+    ("Singapore", "Singapore", 1.3521, 103.8198),
+    ("Bangkok", "Thailand", 13.7563, 100.5018),
+    ("Kuala Lumpur", "Malaysia", 3.1390, 101.6869),
+    ("Jakarta", "Indonesia", -6.2088, 106.8456),
+    ("Hanoi", "Vietnam", 21.0278, 105.8342),
+    ("Ho Chi Minh City", "Vietnam", 10.8231, 106.6297),
+    ("Taipei", "Taiwan", 25.0330, 121.5654),
+    ("New Delhi", "India", 28.6139, 77.2090),
+    ("Mumbai", "India", 19.0760, 72.8777),
+    ("Bengaluru", "India", 12.9716, 77.5946),
+    ("Dubai", "United Arab Emirates", 25.2048, 55.2708),
+    ("Doha", "Qatar", 25.2854, 51.5310),
+    ("Riyadh", "Saudi Arabia", 24.7136, 46.6753),
+    ("Istanbul", "Turkey", 41.0082, 28.9784),
+    # Europe
+    ("London", "United Kingdom", 51.5072, -0.1276),
+    ("Paris", "France", 48.8566, 2.3522),
+    ("Berlin", "Germany", 52.5200, 13.4050),
+    ("Madrid", "Spain", 40.4168, -3.7038),
+    ("Rome", "Italy", 41.9028, 12.4964),
+    ("Amsterdam", "Netherlands", 52.3676, 4.9041),
+    ("Vienna", "Austria", 48.2082, 16.3738),
+    ("Zurich", "Switzerland", 47.3769, 8.5417),
+    ("Brussels", "Belgium", 50.8503, 4.3517),
+    ("Lisbon", "Portugal", 38.7223, -9.1393),
+    ("Dublin", "Ireland", 53.3498, -6.2603),
+    ("Copenhagen", "Denmark", 55.6761, 12.5683),
+    ("Stockholm", "Sweden", 59.3293, 18.0686),
+    ("Oslo", "Norway", 59.9139, 10.7522),
+    ("Helsinki", "Finland", 60.1699, 24.9384),
+    ("Warsaw", "Poland", 52.2297, 21.0122),
+    ("Prague", "Czech Republic", 50.0755, 14.4378),
+    ("Athens", "Greece", 37.9838, 23.7275),
+    ("Budapest", "Hungary", 47.4979, 19.0402),
+    ("Moscow", "Russia", 55.7558, 37.6173),
+    # North America
+    ("New York", "United States", 40.7128, -74.0060),
+    ("Los Angeles", "United States", 34.0522, -118.2437),
+    ("Chicago", "United States", 41.8781, -87.6298),
+    ("San Francisco", "United States", 37.7749, -122.4194),
+    ("Miami", "United States", 25.7617, -80.1918),
+    ("Seattle", "United States", 47.6062, -122.3321),
+    ("Toronto", "Canada", 43.6532, -79.3832),
+    ("Vancouver", "Canada", 49.2827, -123.1207),
+    ("Mexico City", "Mexico", 19.4326, -99.1332),
+    ("Honolulu", "United States", 21.3069, -157.8583),
+    # South America
+    ("Sao Paulo", "Brazil", -23.5505, -46.6333),
+    ("Rio de Janeiro", "Brazil", -22.9068, -43.1729),
+    ("Buenos Aires", "Argentina", -34.6037, -58.3816),
+    ("Lima", "Peru", -12.0464, -77.0428),
+    ("Bogota", "Colombia", 4.7110, -74.0721),
+    ("Santiago", "Chile", -33.4489, -70.6693),
+    # Africa
+    ("Cairo", "Egypt", 30.0444, 31.2357),
+    ("Cape Town", "South Africa", -33.9249, 18.4241),
+    ("Johannesburg", "South Africa", -26.2041, 28.0473),
+    ("Nairobi", "Kenya", -1.2921, 36.8219),
+    ("Lagos", "Nigeria", 6.5244, 3.3792),
+    ("Casablanca", "Morocco", 33.5731, -7.5898),
+    ("Addis Ababa", "Ethiopia", 9.0300, 38.7400),
+    ("Tunis", "Tunisia", 36.8065, 10.1815),
+    # Oceania
+    ("Sydney", "Australia", -33.8688, 151.2093),
+    ("Melbourne", "Australia", -37.8136, 144.9631),
+    ("Brisbane", "Australia", -27.4698, 153.0251),
+    ("Auckland", "New Zealand", -36.8485, 174.7633),
+    ("Perth", "Australia", -31.9505, 115.8605),
+    # More Asia
+    ("Chiang Mai", "Thailand", 18.7883, 98.9853),
+    ("Phnom Penh", "Cambodia", 11.5564, 104.9282),
+    ("Vientiane", "Laos", 17.9757, 102.6331),
+    ("Yangon", "Myanmar", 16.8409, 96.1735),
+    ("Colombo", "Sri Lanka", 6.9271, 79.8612),
+    ("Kathmandu", "Nepal", 27.7172, 85.3240),
+    ("Dhaka", "Bangladesh", 23.8103, 90.4125),
+    ("Karachi", "Pakistan", 24.8607, 67.0011),
+    ("Tehran", "Iran", 35.6892, 51.3890),
+    ("Baghdad", "Iraq", 33.3152, 44.3661),
+    ("Jerusalem", "Israel", 31.7683, 35.2137),
+]
+
+
+def seed_if_empty(db):
+    """Insert the starter set of 100 cities, but only the first time."""
+    if db.count_cities() == 0:
+        db.seed_cities(CITIES)

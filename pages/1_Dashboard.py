@@ -12,7 +12,7 @@ from models.weather import (
     WeatherApiError,
     WeatherNetworkError,
 )
-from provider_factory import get_api_key_diagnostics, get_provider
+from provider_factory import get_api_key_diagnostics, get_provider, save_api_key
 from ui import card, group_forecast_by_day, greeting, setup_page, weather_icon
 
 setup_page("SkyCast - Dashboard", "🌦️")
@@ -278,6 +278,25 @@ with st.expander("Manage trips"):
                 st.rerun()
 
 with st.expander("Weather tools"):
+    st.caption(
+        "Save an OpenWeatherMap key for live weather. "
+        "The OPENWEATHER_API_KEY environment variable takes priority."
+    )
+    with st.form("openweather_api_key_form"):
+        api_key_input = st.text_input(
+            "API key",
+            type="password",
+            help="The key is saved in your Windows user AppData folder.",
+        )
+        save_key_submitted = st.form_submit_button("Save API key")
+    if save_key_submitted:
+        if not api_key_input.strip():
+            st.warning("Enter an API key before saving.")
+        else:
+            save_api_key(api_key_input)
+            st.success("API key saved. Weather tools will use it on the next run.")
+            st.rerun()
+
     if st.button("Test my API key"):
         diagnostics = get_api_key_diagnostics()
         st.write(
